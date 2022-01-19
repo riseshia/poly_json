@@ -7,6 +7,18 @@ Ref:
 - http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf
 
 ```
+json =
+  element
+
+value =
+  object
+  array
+  string
+  number
+  "true"
+  "false"
+  "null"
+
 object =
   [ '{' ws '}' ]
   [ '{' members '}' ]
