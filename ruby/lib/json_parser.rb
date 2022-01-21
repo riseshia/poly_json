@@ -7,7 +7,27 @@
 require 'racc/parser.rb'
 class JsonParser < Racc::Parser
 
-module_eval(<<'...end parser.y/module_eval...', 'parser.y', 47)
+module_eval(<<'...end json_parser.y/module_eval...', 'json_parser.y', 46)
+
+ESCAPE_CHARACTER = %w(" \\ / b f n r t u)
+
+def sub_escape_char(chr)
+  case chr
+  when '"' then '"'
+  when '\\' then '\\'
+  when 'b' then "\b"
+  when 'f' then "\f"
+  when 'n' then "\n"
+  when 'r' then "\r"
+  when 't' then "\t"
+  else
+    raise "#{chr} is not valid escape character."
+  end
+end
+
+def sub_unicode_hex(hex)
+  [hex.to_i(16)].pack("U*")
+end
 
 def parse(text)
   text = text.strip
@@ -17,24 +37,56 @@ def parse(text)
     case text
     when /\A\s+/
       # do nothing
-    when /\A[{}":.,]/
+      text = $'
+    when /\A[{}:.,]/
       s = $&
       @tokens.push [s, s]
+      text = $'
     when /\A0/
       s = $&
       @tokens.push [s, s]
+      text = $'
     when /\A[1-9]/
       s = $&
       @tokens.push [:onenine, s]
-    when /\A\w+/
-      s = $&
-      @tokens.push [:characters, s]
+      text = $'
+    when /\A"/ # be string
+      @tokens.push ['"', '"']
+      chars = ''
+      i = 1
+
+      loop do
+        break if text[i] == '"'
+        if !text[i].match?(/[\u{0020}-\u{10FFFF}]/)
+          raise "#{text[i]} is invalid character."
+        end
+
+        if text[i] == '\\'
+          if text[i + 1] == 'u'
+            if text[(i + 2)..(i + 5)].match?(/\A[0-9A-Fa-f]{4}\z/)
+              chars += sub_unicode_hex(text[(i + 2)..(i + 5)])
+              i += 6
+            else
+              raise "\\u#{text[(i + 2)..(i + 5)]} is not valid unicode!!!"
+            end
+          else
+            chars += sub_escape_char(text[i + 1])
+            i += 2
+          end
+        else
+          chars += text[i]
+          i += 1
+        end
+      end
+
+      @tokens.push [:characters, chars]
+      @tokens.push ['"', '"']
+      text = text[(i+1)..]
     when /\A[+-]/
       s = $&
       @tokens.push [:sign, s]
+      text = $'
     end
-
-    text = $'
   end
 
   do_parse
@@ -49,7 +101,7 @@ def on_error(*args)
   pp args
 end
 
-...end parser.y/module_eval...
+...end json_parser.y/module_eval...
 ##### State transition tables begin ###
 
 racc_action_table = [
@@ -247,235 +299,235 @@ Racc_debug_parser = false
 
 # reduce 0 omitted
 
-module_eval(<<'.,.,', 'parser.y', 4)
+module_eval(<<'.,.,', 'json_parser.y', 4)
   def _reduce_1(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 5)
+module_eval(<<'.,.,', 'json_parser.y', 5)
   def _reduce_2(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 6)
+module_eval(<<'.,.,', 'json_parser.y', 6)
   def _reduce_3(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 7)
+module_eval(<<'.,.,', 'json_parser.y', 7)
   def _reduce_4(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 8)
+module_eval(<<'.,.,', 'json_parser.y', 8)
   def _reduce_5(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 9)
+module_eval(<<'.,.,', 'json_parser.y', 9)
   def _reduce_6(val, _values)
      true
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 10)
+module_eval(<<'.,.,', 'json_parser.y', 10)
   def _reduce_7(val, _values)
      false
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 11)
+module_eval(<<'.,.,', 'json_parser.y', 10)
   def _reduce_8(val, _values)
      nil
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 12)
+module_eval(<<'.,.,', 'json_parser.y', 11)
   def _reduce_9(val, _values)
      {}
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 13)
+module_eval(<<'.,.,', 'json_parser.y', 12)
   def _reduce_10(val, _values)
      val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 14)
+module_eval(<<'.,.,', 'json_parser.y', 13)
   def _reduce_11(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 15)
+module_eval(<<'.,.,', 'json_parser.y', 14)
   def _reduce_12(val, _values)
      val[0].merge(val[2])
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 16)
+module_eval(<<'.,.,', 'json_parser.y', 15)
   def _reduce_13(val, _values)
      { val[0] => val[2] }
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 17)
+module_eval(<<'.,.,', 'json_parser.y', 16)
   def _reduce_14(val, _values)
      []
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 18)
+module_eval(<<'.,.,', 'json_parser.y', 17)
   def _reduce_15(val, _values)
      val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 19)
+module_eval(<<'.,.,', 'json_parser.y', 18)
   def _reduce_16(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 20)
+module_eval(<<'.,.,', 'json_parser.y', 19)
   def _reduce_17(val, _values)
      [val[0], *val[2]]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 21)
+module_eval(<<'.,.,', 'json_parser.y', 20)
   def _reduce_18(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 22)
+module_eval(<<'.,.,', 'json_parser.y', 21)
   def _reduce_19(val, _values)
      val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 23)
+module_eval(<<'.,.,', 'json_parser.y', 22)
   def _reduce_20(val, _values)
-     ""
+     ''
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 24)
+module_eval(<<'.,.,', 'json_parser.y', 23)
   def _reduce_21(val, _values)
      (val[0] + val[1] + val[2]).to_f
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 25)
+module_eval(<<'.,.,', 'json_parser.y', 24)
   def _reduce_22(val, _values)
      (val[0] + val[1]).to_f
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 26)
+module_eval(<<'.,.,', 'json_parser.y', 25)
   def _reduce_23(val, _values)
      (val[0] + val[1]).to_f
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 27)
+module_eval(<<'.,.,', 'json_parser.y', 26)
   def _reduce_24(val, _values)
      val[0].to_i
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 28)
+module_eval(<<'.,.,', 'json_parser.y', 27)
   def _reduce_25(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 29)
+module_eval(<<'.,.,', 'json_parser.y', 28)
   def _reduce_26(val, _values)
      val[0] + val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 30)
+module_eval(<<'.,.,', 'json_parser.y', 29)
   def _reduce_27(val, _values)
      val[0] + val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 31)
+module_eval(<<'.,.,', 'json_parser.y', 30)
   def _reduce_28(val, _values)
      val[0] + val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 32)
+module_eval(<<'.,.,', 'json_parser.y', 31)
   def _reduce_29(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 33)
+module_eval(<<'.,.,', 'json_parser.y', 32)
   def _reduce_30(val, _values)
      val[0] + val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 34)
+module_eval(<<'.,.,', 'json_parser.y', 33)
   def _reduce_31(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 35)
+module_eval(<<'.,.,', 'json_parser.y', 34)
   def _reduce_32(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 36)
+module_eval(<<'.,.,', 'json_parser.y', 35)
   def _reduce_33(val, _values)
      val[0] + val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 37)
+module_eval(<<'.,.,', 'json_parser.y', 36)
   def _reduce_34(val, _values)
      val[0] + val[1] + val[2]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 38)
+module_eval(<<'.,.,', 'json_parser.y', 37)
   def _reduce_35(val, _values)
      val[0] + val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 39)
+module_eval(<<'.,.,', 'json_parser.y', 38)
   def _reduce_36(val, _values)
      val[0] + val[1] + val[2]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 40)
+module_eval(<<'.,.,', 'json_parser.y', 39)
   def _reduce_37(val, _values)
      val[0] + val[1]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 41)
+module_eval(<<'.,.,', 'json_parser.y', 40)
   def _reduce_38(val, _values)
      val[0]
   end
 .,.,
 
-module_eval(<<'.,.,', 'parser.y', 42)
+module_eval(<<'.,.,', 'json_parser.y', 41)
   def _reduce_39(val, _values)
      val[0]
   end
@@ -489,6 +541,6 @@ end   # class JsonParser
 
 
 if $0 == __FILE__
-  test_str = '{ "aa": 1.0, "str": 10 }'
+  test_str = '{ "str": "str\u0020str" }'
   pp JsonParser.new.parse(test_str)
 end
